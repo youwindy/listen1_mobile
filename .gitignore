@@ -64,3 +64,6 @@ android/app/src/main/assets/fonts/*
 # Build leftovers from the new Architecture
 /android/.kotlin/
 /android/app/.cxx/
+
+# Packaged APKs (build artifacts, distributed via releases; see dist/RELEASE_NOTES.md)
+/dist/
