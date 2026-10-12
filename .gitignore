@@ -67,3 +67,6 @@ android/app/src/main/assets/fonts/*
 
 # Packaged APKs (build artifacts, distributed via releases; see dist/RELEASE_NOTES.md)
 /dist/
+
+# Local scratch/analysis scripts
+/.tmp-*.mjs
