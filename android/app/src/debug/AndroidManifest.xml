@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug-only overrides.
+
+  Several music platform endpoints used by the app are plain HTTP (for example
+  NetEase's playlist detail and QQ's search API), which Android blocks by default
+  since API 28. The debug manifest turns cleartext traffic back on so the Metro
+  build can reach them; the release build keeps the stricter default.
+-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-
-    <application android:usesCleartextTraffic="true" tools:targetApi="28" tools:ignore="GoogleAppIndexingWarning" />
+    <application
+        android:usesCleartextTraffic="true"
+        tools:ignore="UnusedAttribute" />
 </manifest>

@@ -1,128 +1,113 @@
-# Listen1 Mobile V0.8.1
+# Listen1 Mobile
 
-[![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
+一款支持多平台音乐播放和搜索的移动音乐 App：浏览与搜索多个平台的音乐、收藏到自建歌单、夜间模式、备份与恢复数据。
 
-## 简介
-
-一款支持多平台音乐播放和搜索的移动音乐 App。现有版本已支持网易云音乐，QQ 音乐，虾米音乐。还有丰富的歌单管理功能。使用 React Native 开发，基于 MIT 协议开源免费。
-
-**支持 iOS 和 Android 平台**
-
-[![imgur](https://i.imgur.com/zYyaK92.png)]()
+本项目已从 React Native 0.59 + Flow 重写为 **React Native 0.87 + TypeScript**，旧的 0.59 代码完整保留在 [`legacy/`](legacy/) 目录中以便对照。
 
 ## 特性
 
-- 一个 App 播放多平台的音乐
+- 一个 App 播放多平台的音乐（网易云、QQ、酷狗、酷我）
 - 搜索多平台音乐
-- 浏览，播放多平台歌单
-- 收藏音乐到自建歌单
+- 浏览、播放多平台歌单
+- 收藏音乐到自建歌单，支持新建、重命名、排序、删除
 - 夜间模式
-- 备份，恢复(支持从`Listen1 chrome extension`导入数据)
+- 备份 / 恢复（兼容 Listen1 浏览器扩展的导出格式）
+- 后台播放与锁屏 / 通知栏控制
 
-## 下载
+## 技术栈
 
-Github 主页下载： https://listen1.github.io/listen1
+| 领域 | 选型 | 取代了旧版的 |
+| --- | --- | --- |
+| 框架 | React Native 0.87.1 + React 19.2（新架构 / Fabric + TurboModules） | RN 0.59.9 + React 16.8 |
+| 语言 | TypeScript 6（strict） | Flow |
+| 导航 | React Navigation 7 原生栈 | react-navigation 3 + react-native-scrollable-tab-view |
+| 状态管理 | Zustand 5 + AsyncStorage 持久化 | Redux + redux-persist 5 + `connect` |
+| 音频播放 | react-native-track-player 4 | react-native-video 4 + react-native-music-control 0.10 |
+| 列表 / 网格 | @shopify/flash-list 2 | `deprecated-react-native-listview` + 内置 `FlatGrid` |
+| 加密 | `crypto-js` + 自实现 textbook RSA（BigInt） | 内置的 `vendor/cryptojs_aes.js` + `vendor/jsencrypt.js` |
+| 样式 | 主题对象 + `StyleSheet`（`useTheme()`） | styled-components 4 |
 
-[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
-    alt="Get it on F-Droid"
-    height="80">](https://f-droid.org/packages/com.listen1.app)
-
-## 安装
-
-### iOS
-
-iOS 只支持编译安装，请拥有开发者证书的开发者连接 iPhone 后，将项目文件中的证书换成自己的证书，然后执行命令安装。
-
-### Andriod
-
-下载 apk 安装, apk 下载地址请访问[项目 release 页面](https://github.com/listen1/listen1_mobile/releases)
-
-## 编译
-
-开发环境
-
-- Java 8 JDK （更高版本需更新默认 gradle 版本）
-- Nodejs 8 （版本>12.10.0 可能遇到 metro 一个关于正则表达式的 bug 导致的启动失败）
-- Android Studio (Android SDK 版本 v28)
-
-编译步骤
-
-- Clone 或下载本项目代码
-- `yarn` 安装依赖
-- `yarn run link` 链接 React Native 的依赖库
-- `yarn start:ios` 将在 iOS 模拟器上运行项目
-- `yarn start:android` 将在安卓真机或模拟器（取决于手机是否连接）运行项目
-
-Apk 打包
+## 目录结构
 
 ```
-   cd .\android\
-   ./gradlew assembleRelease
-   react-native run-android --variant=release
-
+app/
+  api/           音乐平台接口层
+    client.ts      平台注册表：按 id 前缀（netrack_ / qqplaylist_ …）分发到对应 provider
+    types.ts       Track / PlaylistInfo / MusicProvider 等领域类型
+    provider/      netease.ts · qq.ts · kuwo.ts · kugou.ts
+  components/    复用 UI（Screen、AppText、TrackRow、PlaylistCard、MiniPlayer…）
+  hooks/         usePlatformBrowse 等数据钩子
+  modules/       crypto.ts（weapi 加密）、backup.ts（备份格式）
+  navigation/    AppNavigator.tsx（React Navigation 7 路由表）
+  playback/      service.ts（后台播放服务）、PlaybackBridge.tsx（store ↔ 原生播放器同步）
+  screens/       各业务页面
+  store/         player.ts · myPlaylist.ts · settings.ts（Zustand）
+  theme/         调色板与明暗主题
+legacy/          归档的 React Native 0.59 版本（只读参考，不参与构建）
+android/ ios/    新版原生工程
 ```
 
-更详细的打包信息（包括生成 keystone）
+## 开发环境
 
-https://reactnative.cn/docs/signed-apk-android
+- Node.js ≥ 22.11（模板要求；本机使用 v24）
+- JDK 17
+- Android SDK：platform 36 + build-tools 36.0.0 + NDK 27.1.12297006
+- iOS：Xcode + CocoaPods（仅 macOS）
 
-## 代码基本结构
+## 常用命令
 
-- api: 音乐平台相关资源 API
-- asset: 图片等资源
-- components: 可复用的组件
-- views: 业务相关的 screen 组件
-- modules: 组件使用的自定义函数库
-- redux: redux 需要的 action 和 reducer 函数
+```bash
+pnpm install          # 安装依赖（使用 hoisted 布局）
 
-## 鸣谢
+pnpm start            # 启动 Metro
+pnpm android          # 在 Android 设备/模拟器上运行
+pnpm ios              # 在 iOS 模拟器上运行（macOS）
 
-- [git-point](https://github.com/gitpoint/git-point): github 的 RN 客户端，提供本项目开发环境搭建的结构支持。
-- [Binaryify/NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi): 网易 API，参考了网络协议部分代码。
-- [yezihaohao/NeteaseCloudMusic](https://github.com/yezihaohao/NeteaseCloudMusic): 网易音乐 RN 端，参考了 RN 导航，播放部分的库代码实现。
-- [soimort/you-get](https://github.com/soimort/you-get): 音乐下载命令行，参考了协议和法律相关声明（如下）。
+pnpm typecheck        # tsc --noEmit
+pnpm test             # Jest（离线单测）
+pnpm lint             # ESLint
 
-开发过程还有很多开源软件提供了各种问题的解决方案，详见代码注释，篇幅原因不一一列出，感谢开源社区的各位开发者。
+pnpm build:android:debug     # 打 debug APK
+pnpm build:android:release   # 打 release APK
+```
 
-## 更新日志
+## 打包 Android APK
 
-`2020-10-31`
+1. 生成签名密钥并提供给 Gradle（可写在 `android/gradle.properties` 或 `~/.gradle/gradle.properties`）：
 
-- 修复网易云歌单只有 10 首歌的 bug （感谢 @eatenid 的提交)
-- 修复虾米云音乐歌单只有 30 首的 bug
-- 优化过长歌曲名或标题的显示
-- 优化下侧播放控制栏的弹窗性能
-- 修正了点击暂停按钮时导致闪退的 bug
-- 支持 GitHub action 在线打包
+   ```properties
+   MYAPP_UPLOAD_STORE_FILE=my-release-key.keystore
+   MYAPP_UPLOAD_STORE_PASSWORD=*****
+   MYAPP_UPLOAD_KEY_ALIAS=my-key-alias
+   MYAPP_UPLOAD_KEY_PASSWORD=*****
+   ```
 
-`2019-11-27`
+   未提供时 release 构建会回退到 debug 签名，方便本地验证；正式发布请务必配置。
 
-- 修复 qq 音乐因 user-agent 无法访问的 bug
+2. 执行 `pnpm build:android:release`，产物在 `android/app/build/outputs/apk/release/`。
 
-`2019-08-09`
+> 说明：`android/build.gradle` 中的 `compileSdkVersion` 目前固定为 36，因为该值对应本机已安装的 SDK 平台；若你的环境已装 API 37，可自行调整为 37 与 build-tools 37.0.0。
 
-- 修复网易云音乐无法访问的 bug
+## 已知适配项
 
-`2019-07-31`
+- **react-native-track-player 与本机缓存补丁**：4.1.2（当前最新稳定版）尚不能直接针对 RN 0.87 编译——库内 `Track.originalItem` 是 `Bundle?`，而 RN 0.87 的 `Arguments.fromBundle` 要求非空 `Bundle`，安卓编译会报 *Argument type mismatch*。项目通过 pnpm 的 `patchedDependencies` 打了最小补丁（见 [`patches/`](patches/)，配置在 [`pnpm-workspace.yaml`](pnpm-workspace.yaml)），`pnpm install` 后自动生效。上游发布适配 RN 0.87 的版本后即可删除。
+- **明文 HTTP 白名单**：部分平台接口只提供 HTTP（网易歌单详情、QQ 搜索与封面、酷我歌单与播放地址、酷狗移动端接口）。debug 构建默认允许明文；release 构建默认禁止，因此 [`network_security_config.xml`](android/app/src/main/res/xml/network_security_config.xml) 只为这些音乐域名放开明文，其余仍保持安全默认。
+- **明文 HTTP 与数据安全**：上述接口属于 HTTP 传输，存在被中间人篡改的风险；若平台后续提供 HTTPS 接口，应优先切换并收紧该白名单。
 
-- 首次发布
+## 与旧版的差异（有意为之）
+
+- **排序歌单**：旧版依赖已停止维护的 `react-native-sortable-listview` 做拖拽排序，新版改为「上移 / 下移」按钮，不引入新的拖拽依赖。
+- **歌单本地页面**：旧版有独立的本地歌单路由，新版合并进「我的歌单」页内切换，减少一层导航。
+- **错误处理**：旧版大量 `.catch(() => {})` 会把失败静默成 `undefined`；新版统一抛出带中文提示的 `Error`，页面显示可重试的错误态。
+
+## 测试
+
+单测只覆盖**不依赖网络**的纯逻辑，因此可以在 CI 中离线运行：
+
+- `app/modules/__tests__/crypto.test.ts` — weapi 加密：用自身输出解密回原文，并用 Node 的 OpenSSL 实现做 RSA 往返校验
+- `app/store/__tests__/player.test.ts` — 播放队列、随机播放顺序、播放失败跳过、播放模式循环
+- `app/api/__tests__/` — 平台 provider 的解析、id 前缀、URL 识别与错误传播
 
 ## 法律相关
 
-This software is distributed under the MIT license
-
-In particular, please be aware that
-
-> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-> SOFTWARE.
-
-Translated to human words:
-
-_In case your use of the software forms the basis of copyright infringement, or you use the software for any other illegal purposes, the authors cannot take any responsibility for you._
-
-We only ship the code here, and how you are going to use it is left to your own discretion.
+This software is distributed under the MIT license. 本项目仅提供代码，使用所产生的任何后果由使用者自行承担。

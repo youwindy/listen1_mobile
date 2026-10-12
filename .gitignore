@@ -57,3 +57,10 @@ buck-out/
 
 # font resource(link will update)
 android/app/src/main/assets/fonts/*
+# ---------------------------------------------------------------------------
+# Archived React Native 0.59 app: reference only (not built/linted/tested).
+/legacy/
+
+# Build leftovers from the new Architecture
+/android/.kotlin/
+/android/app/.cxx/

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cleartext (plain HTTP) policy.
+
+  React Native's Gradle plugin sets `usesCleartextTraffic=false` for release
+  builds, but several music-platform endpoints used by this app are HTTP-only
+  (NetEase's playlist detail, QQ's search/covers, Kuwo's playlist and stream
+  lookup, Kugou's mobile API). Rather than allowing cleartext everywhere, this
+  config keeps the secure default and whitelists only those hosts.
+
+  This file is reused by the debug build, which already forces cleartext on.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- NetEase -->
+        <domain includeSubdomains="true">music.163.com</domain>
+
+        <!-- QQ Music -->
+        <domain includeSubdomains="true">y.qq.com</domain>
+        <domain includeSubdomains="true">imgcache.qq.com</domain>
+
+        <!-- Kuwo -->
+        <domain includeSubdomains="true">kuwo.cn</domain>
+
+        <!-- Kugou -->
+        <domain includeSubdomains="true">kugou.com</domain>
+    </domain-config>
+</network-security-config>
