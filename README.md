@@ -86,6 +86,33 @@ pnpm build:android:release   # 打 release APK
 
 2. 执行 `pnpm build:android:release`，产物在 `android/app/build/outputs/apk/release/`。
 
+### 包体积与 ABI 拆分
+
+release 构建默认开启 **R8 代码压缩 + 资源压缩**，并按 CPU 架构拆分 APK。原生库（`libreactnative`、`libhermesvm`、`libc++_shared`、`libsqliteJni` 等）占包体约 83%，而一个「胖包」会同时塞进四种架构，绝大多数设备要为此多下载三份永远用不到的原生库。
+
+| 产物 | 大小 | 适用 |
+| --- | --- | --- |
+| `app-arm64-v8a-release.apk` | ≈20 MB | 2017 年后的主流手机（**首选**） |
+| `app-armeabi-v7a-release.apk` | ≈16 MB | 老旧的 32 位设备 |
+| `app-x86_64-release.apk` / `app-x86-release.apk` | ≈21 MB | 模拟器 |
+| `app-universal-release.apk` | ≈63 MB | 不确定架构时的兜底 |
+
+对比优化前的单个胖包 70.4 MB：**arm64 单架构包缩小约 71%**。其中 R8 把 dex 从 8.4 MB 压到 2.0 MB，资源压缩把 `resources.arsc` 从 1.45 MB 压到 0.76 MB。
+
+想只出一个通用胖包（例如内部分发）：
+
+```bash
+cd android && gradlew.bat assembleRelease -PnoAbiSplits=true
+```
+
+想在 release 里彻底去掉模拟器架构（通用包可再减约 40 MB）：
+
+```bash
+cd android && gradlew.bat assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+```
+
+> 上架 Google Play 时请改用 AAB（`bundleRelease`），商店会按设备只下发对应架构，效果优于自行拆分 APK。
+
 > 说明：`android/build.gradle` 中的 `compileSdkVersion` 目前固定为 36，因为该值对应本机已安装的 SDK 平台；若你的环境已装 API 37，可自行调整为 37 与 build-tools 37.0.0。
 
 ## 已知适配项

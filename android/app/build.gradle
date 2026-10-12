@@ -55,9 +55,31 @@ react {
 }
 
 /**
- * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
+ * Run R8 on release builds to minify Java/Kotlin bytecode and strip unused code.
+ * React Native complains loudly if a release build ships unminified, and the
+ * plugin ships the keep rules the framework needs.
  */
-def enableProguardInReleaseBuilds = false
+def enableProguardInReleaseBuilds = true
+
+/**
+ * Drop resources that no code references (`shrinkResources`).
+ * Without `android.enableResourceOptimizations`/strict mode the shrinker keeps
+ * anything it cannot prove unused, so this is safe for React Native apps.
+ */
+def enableResourceShrinkingInReleaseBuilds = true
+
+/**
+ * Build one APK per CPU architecture instead of one fat APK.
+ *
+ * The native libraries are ~83% of the payload (libreactnative, libhermesvm,
+ * libc++_shared, libsqliteJni, libreact_codegen_rnscreens), and a fat APK ships
+ * all four ABIs, so most devices carry three architectures they never execute.
+ * `universalApk true` keeps a single install-anywhere fallback.
+ *
+ * Turn this off with `-PnoAbiSplits=true` when a single fat APK is wanted
+ * (e.g. for an internal test that must be architecture-agnostic).
+ */
+def enableAbiSplits = !project.hasProperty('noAbiSplits')
 
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
@@ -82,8 +104,8 @@ android {
         applicationId "com.listen1.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0.0"
+        versionCode 2
+        versionName "1.0.1"
     }
     signingConfigs {
         debug {
@@ -114,7 +136,29 @@ android {
                 ? signingConfigs.release
                 : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
+            shrinkResources enableResourceShrinkingInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+    }
+
+    // One APK per ABI (plus a universal fallback when enabled above).
+    splits {
+        abi {
+            reset()
+            enable enableAbiSplits
+            universalApk true
+            include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+        }
+    }
+
+    // Each split needs a distinct versionCode so they can coexist in a store.
+    applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            def abi = output.getFilter(com.android.build.OutputFile.ABI)
+            if (abi != null) {
+                def abiCodes = ["armeabi-v7a": 1, "arm64-v8a": 2, "x86": 3, "x86_64": 4]
+                output.versionCodeOverride = abiCodes[abi] * 1000000 + variant.versionCode
+            }
         }
     }
 }
