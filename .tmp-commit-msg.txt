@@ -1,0 +1,26 @@
+Fix startup crash: track-player @ReactMethod signatures returned Job
+
+react-native-track-player 4.1.2 declares every @ReactMethod as an
+expression-bodied coroutine launch:
+
+    fun getPosition(callback: Promise) = scope.launch { ... }
+
+That returns kotlinx.coroutines.Job, so the compiled JVM signature returns
+Object instead of void. RN 0.87's TurboModule interop assumes
+"returnType == void iff the method is synchronous" and refuses to parse the
+module, so the app aborted on launch:
+
+    TurboModuleInteropUtils$ParsingException: Unable to parse @ReactMethod
+    annotations from native module: TrackPlayerModule
+
+A bare ": Unit =" does not compile ("Return type mismatch: expected 'Unit',
+actual 'Job'"); the body has to become a block so the Job is discarded, which
+leaves a real void signature and keeps the MainScope dispatch. 37 signatures
+were converted, verified with javap:
+
+    public final void getPosition(com.facebook.react.bridge.Promise);
+
+Replaces the fragile hand-written unified diff with an idempotent,
+content-matching postinstall script (scripts/patch-track-player.mjs) that also
+fixes the nullable Bundle argument and refuses to write brace-unbalanced
+output. Also bumps to 1.0.2 (versionCode 3).

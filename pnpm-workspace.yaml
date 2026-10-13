@@ -1,10 +1,5 @@
-# pnpm applies these patches after installing the package.
-#
-# react-native-track-player 4.1.2 (latest stable) does not compile against
-# React Native 0.87: `Track.originalItem` is a nullable Bundle while
-# `Arguments.fromBundle` now requires a non-null one, so the Android build fails
-# with "Argument type mismatch: actual type is 'Bundle?', but 'Bundle' was
-# expected". The patch passes an empty Bundle instead. Remove it once upstream
-# ships a release that builds against RN 0.87.
-patchedDependencies:
-  react-native-track-player@4.1.2: patches/react-native-track-player@4.1.2.patch
+# react-native-track-player is patched by scripts/patch-track-player.mjs, which
+# runs from the "postinstall" script in package.json. That script handles both
+# RN 0.87 incompatibilities (nullable Bundle argument, and @ReactMethod bodies
+# whose JVM signature returned a Job instead of void). See the script header for
+# the details, and remove it once upstream ships a compatible release.

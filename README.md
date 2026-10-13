@@ -117,7 +117,11 @@ cd android && gradlew.bat assembleRelease -PreactNativeArchitectures=arm64-v8a,a
 
 ## 已知适配项
 
-- **react-native-track-player 与本机缓存补丁**：4.1.2（当前最新稳定版）尚不能直接针对 RN 0.87 编译——库内 `Track.originalItem` 是 `Bundle?`，而 RN 0.87 的 `Arguments.fromBundle` 要求非空 `Bundle`，安卓编译会报 *Argument type mismatch*。项目通过 pnpm 的 `patchedDependencies` 打了最小补丁（见 [`patches/`](patches/)，配置在 [`pnpm-workspace.yaml`](pnpm-workspace.yaml)），`pnpm install` 后自动生效。上游发布适配 RN 0.87 的版本后即可删除。
+- **react-native-track-player 适配补丁（必须）**：4.1.2（当前最新稳定版）无法直接用于 RN 0.87，有两处不兼容，由 [`scripts/patch-track-player.mjs`](scripts/patch-track-player.mjs) 在 `pnpm install` 后自动修复（幂等、按内容匹配、写入前校验括号平衡）：
+  1. `Track.originalItem` 是 `Bundle?`，而 RN 0.87 的 `Arguments.fromBundle` 要求非空，安卓编译报 *Argument type mismatch*。
+  2. 所有 `@ReactMethod` 写成表达式体 `fun f(...) = scope.launch { … }`，返回 `Job`，JVM 签名不是 `void`；RN 0.87 的 TurboModule 互操作层假设「非 void 即同步方法」，会在启动时抛 *ParsingException: Unable to parse @ReactMethod annotations from native module: TrackPlayerModule*，表现为**打开即闪退**。补丁把 37 个方法改成块状函数体，丢弃 `Job` 并保留 `MainScope` 调度。
+
+  上游发布适配 RN 0.87 的版本后即可删除该脚本与 `package.json` 里的 `postinstall`。临时跳过：`SKIP_TRACK_PLAYER_PATCH=1 pnpm install`。
 - **明文 HTTP 白名单**：部分平台接口只提供 HTTP（网易歌单详情、QQ 搜索与封面、酷我歌单与播放地址、酷狗移动端接口）。debug 构建默认允许明文；release 构建默认禁止，因此 [`network_security_config.xml`](android/app/src/main/res/xml/network_security_config.xml) 只为这些音乐域名放开明文，其余仍保持安全默认。
 - **明文 HTTP 与数据安全**：上述接口属于 HTTP 传输，存在被中间人篡改的风险；若平台后续提供 HTTPS 接口，应优先切换并收紧该白名单。
 
